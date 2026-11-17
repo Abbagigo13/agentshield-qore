@@ -1,0 +1,7 @@
+{
+  "default": {"per_tx_limit": 1000000, "daily_limit": 3000000, "escalate_above": 500000, "max_per_minute": 5},
+  "agents": {
+    "agent-alpha": {"daily_limit": 2000000, "allowed_recipients": ["qor1..."]},
+    "agent-beta": {"per_tx_limit": 100000, "daily_limit": 300000}
+  }
+}
