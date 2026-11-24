@@ -8,7 +8,7 @@ Target network: **QoreChain testnet only.**
 An AI agent that can move money is one prompt injection away from draining its wallet. AgentShield sits between
 the agent and the chain. The agent never holds a key. It submits an *intent*; AgentShield decides, signs, and records.
 
-```text
+```
 agent --intent--> [policy engine] --ALLOW--> [hybrid secp256k1 + ML-DSA-87 tx] --> QoreChain testnet
                        |  ESCALATE --> human approval                |
                        |  DENY                                        v
@@ -18,7 +18,6 @@ agent --intent--> [policy engine] --ALLOW--> [hybrid secp256k1 + ML-DSA-87 tx] -
 ```
 
 ## Features
-
 - **Policy engine:** nine deterministic rules (address, denom, amount, allowlist, per-tx limit, daily cap, rate limit, prompt-injection scan, human-approval threshold). No model in the decision path.
 - **Hybrid post-quantum transactions:** secp256k1 + ML-DSA-87 through the official `qorechain-sdk`.
 - **Signed receipts:** every decision and execution is a hash-chained, ML-DSA-87 signed record. Edits and deletions in the middle are detected.
@@ -28,7 +27,6 @@ agent --intent--> [policy engine] --ALLOW--> [hybrid secp256k1 + ML-DSA-87 tx] -
 - **Per-agent policies**, an **HTTP API**, an **MCP server**, a **CLI**, and a **dashboard website**.
 
 ## Quickstart
-
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1          # Linux/macOS: source .venv/bin/activate
@@ -37,13 +35,11 @@ python -m pytest -q                    # 16 passed
 python -m agentshield_qore.cli demo    # offline demo, no keys needed
 uvicorn agentshield_qore.gateway:app --port 8080
 ```
-
 Full instructions, including going live on testnet: [docs/SETUP.md](docs/SETUP.md).
 
 ## Documentation
-
 | Document | What it covers |
-| --- | --- |
+|---|---|
 | [docs/PRD.md](docs/PRD.md) | Problem, users, goals, requirements, scope |
 | [docs/DESIGN.md](docs/DESIGN.md) | Visual design system and UX of the website |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, request lifecycle, trust boundaries |
@@ -59,8 +55,7 @@ Full instructions, including going live on testnet: [docs/SETUP.md](docs/SETUP.m
 | [docs/TESTING.md](docs/TESTING.md) | Test suite and how to extend it |
 
 ## Layout
-
-```text
+```
 agentshield_qore/   policy.py receipts.py chain.py shield.py onchain.py config.py gateway.py mcp_server.py cli.py
 tests/              test_core.py test_onchain.py test_hardening.py
 web/index.html      landing page and dashboard (self-contained)
@@ -68,15 +63,12 @@ docs/               the documents above
 ```
 
 ## Status
-
 Works offline and is covered by tests: policy engine, signed receipt log, hybrid transaction building, gateway, MCP server.
 **Not yet exercised against the live testnet:** broadcast, on-chain PQC key registration, anchoring and spending-rule sync.
 See [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
 
 ## Security
-
 Testnet only. Never use a mnemonic that holds real funds. Read [docs/SECURITY.md](docs/SECURITY.md) before deploying.
 
 ## License
-
 MIT. See [LICENSE](LICENSE). AI assistance is documented in [AI_USAGE.md](AI_USAGE.md).

@@ -74,7 +74,7 @@ class ChainSigner:
                                           memo=memo, sign_bytes_version=version)
 
         if self.dry_run:
-            built = build("v1")
+            built = build("v2")
             return {"dry_run": True, "tx_hash": hashlib.sha256(built.tx_raw_bytes).hexdigest().upper(),
                     "tx_bytes": len(built.tx_raw_bytes), "pqc_sig_bytes": len(built.pqc_signature)}
         resp = qorsdk.hybrid_sign_and_broadcast(build, chain_id=self.chain_id, rest_url=self.rest_url)
@@ -93,7 +93,7 @@ class ChainSigner:
                                           memo=memo, sign_bytes_version=version)
 
         if self.dry_run:
-            built = build("v1")
+            built = build("v2")
             return {"dry_run": True, "tx_hash": hashlib.sha256(built.tx_raw_bytes).hexdigest().upper(),
                     "tx_bytes": len(built.tx_raw_bytes)}
         resp = qorsdk.hybrid_sign_and_broadcast(build, chain_id=self.chain_id, rest_url=self.rest_url)

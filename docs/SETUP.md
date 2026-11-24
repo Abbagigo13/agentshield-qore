@@ -62,6 +62,12 @@ print(s.send(s.address, 1, "uqor", "agentshield test"))
 ```
 4. Start the gateway, then call `POST /v1/anchor` and `POST /v1/onchain/sync` with the admin token; check `GET /v1/onchain`.
 
+### Guided live check
+`python scripts/live_check.py --address` prints the wallet address to fund. After funding, `python scripts/live_check.py`
+runs: reach testnet, balance, PQC key registration, a hybrid self-send, a policy-gated payment, an anchor, an on-chain
+spending-rule write and read-back, and log verification. It stops at the first core failure; the two spending-rule steps are
+reported but do not stop the run. `--dry` runs the same steps offline.
+
 ## Troubleshooting
 | Symptom | Fix |
 |---|---|

@@ -37,6 +37,7 @@ curl -s localhost:8080/v1/verify
 - Load and long-running behaviour.
 
 ## Live test plan (testnet)
+Automated: `python scripts/live_check.py` covers steps 1 to 5 below. Manual checks follow.
 1. Register the PQC key. 2. Send 1 uqor to self. 3. Submit an ALLOW intent with `DRY_RUN=0` and confirm the hash on an explorer.
 4. Anchor, then confirm the memo on-chain. 5. Sync rules; `GET /v1/onchain` shows `in_sync`. 6. Try a payment above the
 on-chain limit directly and confirm the chain refuses it. Record results in `docs/IMPLEMENTATION.md`.
