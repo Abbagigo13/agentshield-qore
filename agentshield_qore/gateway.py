@@ -87,4 +87,14 @@ def onchain_status():
 @app.post("/v1/onchain/sync")
 def onchain_sync(x_admin_token: str | None = Header(None)):
     _admin(x_admin_token)
-    return shield.sync_onchain()
+    try:
+        return shield.sync_onchain()
+    except PermissionError as e:
+        raise HTTPException(409, str(e))
+
+
+@app.get("/v1/health")
+def health():
+    s = shield.signer
+    return {"mode": shield.mode, "network": s.network, "chain_id": s.chain_id, "dry_run": s.dry_run,
+            "owner": getattr(s, "owner", s.address), "relayer_or_signer": s.address}

@@ -18,6 +18,10 @@ class Shield:
         self.lock = threading.RLock()          # one decision at a time: the log is a single chain
         self.pending = self._rebuild_pending()  # survives restarts: derived from the signed log
 
+    @property
+    def mode(self) -> str:
+        return "delegated" if hasattr(self.signer, "owner") else "direct"
+
     def policy_for(self, agent_id: str) -> Policy:
         return self.agent_policies.get(agent_id, self.policy)
 
@@ -73,6 +77,9 @@ class Shield:
 
     # -- second layer: on-chain spending rules --------------------------
     def sync_onchain(self, account_address: str | None = None) -> dict:
+        if self.mode == "delegated":
+            raise PermissionError("delegated mode: the owner key is not in the gateway. Run scripts/link_delegate.py "
+                                  "with --update-rules on the owner side to change the on-chain limits")
         with self.lock:
             m = onchain.build_update_msg(self.signer.address, account_address or self.signer.address, self.policy)
             tx = self.signer.send_msgs([m], memo="agentshield:spending-rules")

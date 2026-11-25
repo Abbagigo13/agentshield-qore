@@ -3,7 +3,7 @@
 ## Run
 ```bash
 pip install -r requirements.txt
-python -m pytest -q          # 16 tests, offline, about 10 seconds
+python -m pytest -q          # 19 tests, offline, about 10 seconds
 ```
 No network, wallet or funds are used. Transactions are built and signed in dry-run mode.
 
@@ -12,7 +12,7 @@ No network, wallet or funds are used. Transactions are built and signed in dry-r
 |---|---|---|
 | `tests/test_core.py` | 6 | Allow, every deny rule, daily and rate limits, escalate then approve, log verification, tamper and deletion detection |
 | `tests/test_onchain.py` | 4 | Rule generation and validation, update message, drift report cases, dry-run sync receipt |
-| `tests/test_hardening.py` | 6 | Pending approvals after restart, per-agent policy, 20 concurrent submissions, `.env` and policy file loading, MCP tools, MCP tool listing |
+| `tests/test_hardening.py` | 9 | Pending approvals after restart, per-agent policy, 20 concurrent submissions, `.env` and policy file loading, MCP tools, MCP tool listing, waiting for tx inclusion, delegate signing and link messages, delegated mode from config |
 
 ## Manual checks
 ```bash
@@ -30,7 +30,7 @@ curl -s localhost:8080/v1/verify
 - Gateway tests: `fastapi.testclient.TestClient` with `AGENTSHIELD_DATA` set to a temp directory before importing the app.
 
 ## Not covered (yet)
-- **Live testnet:** broadcast, key registration, anchoring, spending-rule sync and enforcement.
+- Live testnet is covered by scripts, not pytest: `live_check.py`, `enforcement_check.py`, `delegation_check.py` (results in `docs/VERIFICATION.md`). Not yet live: on-chain daily cap, expiry, revocation.
 - MCP over a real client connection.
 - API authentication failure matrix and CORS.
 - Browser behaviour of the website (verify/tamper, mobile layout) beyond manual checks.

@@ -19,7 +19,7 @@ Optional MCP server: `pip install -r requirements-mcp.txt`.
 
 ## 2. Verify offline
 ```bash
-python -m pytest -q                    # expect 16 passed
+python -m pytest -q                    # expect 19 passed
 python -m agentshield_qore.cli demo     # attacks blocked, tampered log detected
 ```
 No `.env` and no network are needed for this.
@@ -36,6 +36,9 @@ Copy `.env.example` to `.env` and edit. Real environment variables override `.en
 | `AGENTSHIELD_RECIPIENTS` | Comma list of allowed `qor1...` addresses | empty (no allowlist) |
 | `AGENTSHIELD_POLICIES` | Path to per-agent policy JSON | `policies.json` |
 | `AGENTSHIELD_MCP_AGENT` | Agent id for the MCP server | `mcp-agent` |
+| `AGENTSHIELD_MODE` | `direct` or `delegated` | `direct` |
+| `AGENTSHIELD_OWNER_ADDRESS`, `AGENTSHIELD_RELAYER_MNEMONIC`, `AGENTSHIELD_DELEGATE_SEED` | Delegated mode roles | derived from `AGENTSHIELD_MNEMONIC` |
+| `AGENTSHIELD_GAS`, `AGENTSHIELD_GAS_PRICE` | Fee tuning | `300000`, `0.15` |
 | `AGENTSHIELD_DATA` | Data directory | `data` |
 
 Note: `.env.example` ships with `AGENTSHIELD_DRY_RUN=0`. Set it to `1` until you intend to broadcast.
@@ -61,6 +64,14 @@ print(s.ensure_registered())                         # one time
 print(s.send(s.address, 1, "uqor", "agentshield test"))
 ```
 4. Start the gateway, then call `POST /v1/anchor` and `POST /v1/onchain/sync` with the admin token; check `GET /v1/onchain`.
+
+### Delegated mode (chain-enforced limits)
+1. In `.env` add `AGENTSHIELD_MODE=delegated`. With a single mnemonic: owner is account 0, relayer account 1, delegate key 2 (test only).
+2. Fund the relayer with about 0.5 QOR from the owner, register its PQC key, and link the delegate:
+   `python scripts/delegation_check.py` does all of this and then proves the chain blocks an over-limit payment.
+3. Later, `python scripts/link_delegate.py --update-rules` changes the on-chain limits to match your policy.
+4. Start the gateway: `GET /v1/health` shows `"mode": "delegated"`.
+Production: set `AGENTSHIELD_OWNER_ADDRESS`, `AGENTSHIELD_RELAYER_MNEMONIC` and `AGENTSHIELD_DELEGATE_SEED`, and keep the owner key off the gateway host.
 
 ### Guided live check
 `python scripts/live_check.py --address` prints the wallet address to fund. After funding, `python scripts/live_check.py`

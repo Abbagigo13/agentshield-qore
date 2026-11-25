@@ -25,7 +25,8 @@ Integers in base units. `1 QOR = 1,000,000 uqor`.
 | GET | `/v1/verify` | none | Verify hash chain and every signature |
 | POST | `/v1/anchor` | admin | Anchor the log head on-chain |
 | GET | `/v1/onchain` | none | Compare on-chain spending rules with gateway policy |
-| POST | `/v1/onchain/sync` | admin | Write gateway limits on-chain |
+| POST | `/v1/onchain/sync` | admin | Write gateway limits on-chain (direct mode; returns `409` in delegated mode) |
+| GET | `/v1/health` | none | Mode, network, owner and signer addresses |
 
 ### POST /v1/intents
 Request:

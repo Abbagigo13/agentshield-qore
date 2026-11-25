@@ -22,7 +22,7 @@ agent --intent--> [policy engine] --ALLOW--> [hybrid secp256k1 + ML-DSA-87 tx] -
 - **Hybrid post-quantum transactions:** secp256k1 + ML-DSA-87 through the official `qorechain-sdk`.
 - **Signed receipts:** every decision and execution is a hash-chained, ML-DSA-87 signed record. Edits and deletions in the middle are detected.
 - **On-chain anchor:** commit the log head in a transaction memo.
-- **On-chain spending rules:** mirror the numeric limits into QoreChain so the chain also refuses out-of-bounds payments.
+- **Chain-enforced limits (delegated mode):** the gateway signs with a linked delegate key and a relayer submits, so the chain itself refuses payments above the on-chain limit. Verified on the testnet; see [docs/VERIFICATION.md](docs/VERIFICATION.md).
 - **Human approval:** large payments wait for a person; pending approvals survive restarts.
 - **Per-agent policies**, an **HTTP API**, an **MCP server**, a **CLI**, and a **dashboard website**.
 
@@ -31,7 +31,7 @@ agent --intent--> [policy engine] --ALLOW--> [hybrid secp256k1 + ML-DSA-87 tx] -
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1          # Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
-python -m pytest -q                    # 16 passed
+python -m pytest -q                    # 19 passed
 python -m agentshield_qore.cli demo    # offline demo, no keys needed
 uvicorn agentshield_qore.gateway:app --port 8080
 ```
@@ -53,19 +53,23 @@ Full instructions, including going live on testnet: [docs/SETUP.md](docs/SETUP.m
 | [docs/MCP.md](docs/MCP.md) | Connecting MCP agents |
 | [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) | HTTP clients, agent frameworks, QoreChain |
 | [docs/TESTING.md](docs/TESTING.md) | Test suite and how to extend it |
+| [docs/VERIFICATION.md](docs/VERIFICATION.md) | What was proven on the live testnet, with transaction hashes |
 
 ## Layout
 ```
-agentshield_qore/   policy.py receipts.py chain.py shield.py onchain.py config.py gateway.py mcp_server.py cli.py
+agentshield_qore/   policy.py receipts.py chain.py shield.py onchain.py delegate.py config.py gateway.py mcp_server.py cli.py
+scripts/            live_check.py enforcement_check.py delegation_check.py link_delegate.py
 tests/              test_core.py test_onchain.py test_hardening.py
 web/index.html      landing page and dashboard (self-contained)
 docs/               the documents above
 ```
 
 ## Status
-Works offline and is covered by tests: policy engine, signed receipt log, hybrid transaction building, gateway, MCP server.
-**Not yet exercised against the live testnet:** broadcast, on-chain PQC key registration, anchoring and spending-rule sync.
-See [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
+Verified on the QoreChain testnet (24 Nov 2026): hybrid transactions, PQC key registration, policy-gated payments, on-chain
+anchoring, spending-rule write and read-back, and **chain-enforced refusal of an over-limit payment by a delegate key**.
+Finding: the on-chain rule does **not** bind the account owner's own payments, so the chain-level layer needs delegated mode.
+Details and transaction hashes: [docs/VERIFICATION.md](docs/VERIFICATION.md). Not yet verified: on-chain daily cap, key expiry
+and revocation, the MCP server against a real client. See [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
 
 ## Security
 Testnet only. Never use a mnemonic that holds real funds. Read [docs/SECURITY.md](docs/SECURITY.md) before deploying.

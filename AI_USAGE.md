@@ -19,12 +19,18 @@ This project was built with AI assistance. This file records how, for the QoreCh
 - Registers the project, controls the repository, and will run and verify the live testnet steps.
 
 ## How the output was checked
-- 16 automated tests (offline). Run `python -m pytest -q`.
+- 19 automated tests (offline). Run `python -m pytest -q`.
 - An offline end-to-end demo: `python -m agentshield_qore.cli demo`.
 - The human ran the tests and demo locally.
 
+## Verified on the live testnet
+On 24 November 2026 the human ran the live scripts on the QoreChain testnet: hybrid transactions, PQC key registration, anchoring,
+on-chain spending rules, and chain-enforced refusal of an over-limit payment by a delegate key. Evidence: `docs/VERIFICATION.md`.
+The live run also exposed three bugs in AI-written code (fee too low, account-sequence timing, a self-payment rule), now fixed,
+and showed that the first design did not give chain-level protection, which led to delegated mode.
+
 ## Not yet verified
-Live testnet behaviour (key registration, broadcast, anchoring, on-chain spending rules) has not been run. This file will be updated when it has.
+On-chain daily cap, delegate expiry and revocation, and the MCP server against a real client.
 
 ## Notes
 AI-generated code can be wrong in ways that tests do not catch. `docs/SECURITY.md` lists known limits. The project targets the testnet only.

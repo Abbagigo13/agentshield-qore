@@ -6,8 +6,9 @@
 | Policy engine (R01 to R08, E01) | Built, tested |
 | Signed, hash-chained receipt log and verifier | Built, tested |
 | Hybrid transaction building (offline, dry-run) | Built, tested |
-| Live broadcast, PQC key registration, anchoring | Written from SDK docs, **not run on testnet** |
-| On-chain spending-rule mirror and drift report | Built, tested offline; **live behaviour unverified** |
+| Live broadcast, PQC key registration, anchoring | **Verified on testnet** (24 Nov 2026), see VERIFICATION.md |
+| On-chain spending-rule mirror and drift report | **Verified**: rule stored and read back. It does **not** bound the account owner (by design) |
+| Delegated mode (delegate key + relayer, chain-enforced limits) | **Verified**: the chain refused a 1.5 QOR payment above the 1 QOR rule |
 | Human approvals, restart-safe | Built, tested |
 | Per-agent policies, `.env` loading | Built, tested |
 | HTTP gateway | Built, smoke-tested |
@@ -16,7 +17,7 @@
 | Live dashboard against the gateway | Not started |
 | Demo agent with a real LLM | Not started |
 
-16 automated tests pass on Linux and on Windows (Python 3.13, `qorechain-sdk` 0.14.0).
+19 automated tests pass on Linux and on Windows (Python 3.13, `qorechain-sdk` 0.14.0).
 
 ## Build order used
 1. Policy engine and tests (pure logic first).
@@ -37,16 +38,17 @@
 - **Honest coverage.** Only numeric limits mirror on-chain; the rest stays gateway-only and the API says so.
 
 ## Known limitations
-- Live testnet path unverified. The SDK's `ensure_pqc_registered`, broadcast and spending-rule calls are used as documented.
-- Spending rules may bind only abstract accounts or linked keys, not a plain account. To be confirmed.
+- Spending rules bound linked delegate keys, not the account owner. Direct mode therefore has no chain-level limit; use delegated mode.
+- In the demo setup one mnemonic derives owner, relayer and delegate. That is for testing; production needs the owner key offline.
+- On-chain daily cap, delegate expiry and revocation are not yet exercised live.
 - The injection scan is a regex list, not a classifier.
 - Truncating the last records of a log is not detectable unless a later anchor exists.
 - Fee is a fixed constant (`5000 uqor`, gas `200000`), not estimated.
 - Single process only.
 
 ## Remaining work (to 2 December 2026)
-1. Live testnet run: register key, one payment, one anchor, one rule sync. Fix surprises. **Highest priority.**
-2. Demo agent: an LLM agent with the `pay` tool facing a poisoned invoice.
-3. Live dashboard: point the website at the real gateway (`/v1/receipts`, `/v1/verify`, `/v1/onchain`).
-4. Pin tested dependency versions; repository polish and license.
-5. Fee estimation and clearer broadcast error reporting.
+1. Demo agent: an LLM agent with the `pay` tool facing a poisoned invoice, running in delegated mode.
+2. Live dashboard: point the website at the real gateway (`/v1/health`, `/v1/receipts`, `/v1/verify`, `/v1/onchain`).
+3. Exercise the on-chain daily cap, delegate expiry and revocation; add a revoke command.
+4. Pin tested dependency versions; fee estimation instead of a fixed gas price.
+5. MCP server against a real client.

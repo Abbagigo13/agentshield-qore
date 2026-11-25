@@ -70,8 +70,8 @@ if not DRY:
         r.raise_for_status()
         coins = {c["denom"]: int(c["amount"]) for c in r.json().get("balances", [])}
         have = coins.get("uqor", 0)
-        if have < 50_000:
-            raise RuntimeError(f"balance {have} uqor is too low; fund {addr} from the faucet (need at least 50000 uqor)")
+        if have < 300_000:
+            raise RuntimeError(f"balance {have} uqor is too low; fund {addr} from the faucet (need at least 300000 uqor)")
         return f"{have} uqor"
     step("2 balance", balance)
 

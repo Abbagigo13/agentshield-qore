@@ -33,7 +33,7 @@
 | Layer | Enforces | If it fails |
 |---|---|---|
 | Gateway policy | All rules R01 to R08, E01 | Chain limits still apply to numeric rules |
-| On-chain spending rules | Per-tx, daily, denom | Gateway still blocks; log still records |
+| On-chain spending rules (delegated mode) | Per-tx, daily, denom on the delegate key | Gateway still blocks; log still records |
 | Receipt log | Evidence of every decision | Anchor proves the head existed at a given time |
 
 Gateway-only rules: allowlist (R04), rate limit (R07), injection scan (R08), human approval (E01). The on-chain rule
@@ -43,6 +43,17 @@ format has no recipient list, so those cannot be mirrored.
 `hash = SHA-256(canonical JSON of the record without hash and sig)`; `sig = ML-DSA-87(secret key, hash bytes)`;
 each record stores `prev_hash`. Canonical JSON means sorted keys, no spaces, UTF-8. The browser demo and the Python
 code use the same canonicalization.
+
+## Delegated mode (chain-enforced limits)
+`AGENTSHIELD_MODE=delegated` swaps `ChainSigner` for `DelegatedSigner` (`delegate.py`). Roles:
+| Role | Does | Holds |
+|---|---|---|
+| Owner | Holds the funds; links the delegate and sets the rule, once | Owner key, offline in production |
+| Relayer | Submits transactions, pays fees (hybrid ML-DSA-87 signature) | Small fee balance |
+| Delegate | Signs each payment's digest; the chain bounds it | ed25519 key in the gateway |
+A payment is a `MsgExecuteCosmos` carrying the delegate's signature. The chain checks the signature, nonce and the spending
+rule, and refuses a payment above the limit even though the transaction itself succeeds (the failure is in the execution result,
+which the signer detects and records as `execution_failed`). Verified on the testnet.
 
 ## Concurrency
 One `RLock` serializes decisions so the chain stays linear. **Run a single worker process.** Multiple uvicorn workers

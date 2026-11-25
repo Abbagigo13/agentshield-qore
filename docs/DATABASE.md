@@ -28,7 +28,7 @@ Common fields on every record:
 | Kind | Extra fields |
 |---|---|
 | `decision` | `agent_id`, `intent{agent_id,to,amount,denom,memo,rationale}`, `verdict`, `reasons[]`, `rule_ids[]` |
-| `execution` | `agent_id`, `ref_seq`, `amount`, `to`, `dry_run`, `tx_hash` |
+| `execution` | `agent_id`, `ref_seq`, `amount`, `to`, `dry_run`, `tx_hash`, `height` (live), `via` (`delegate` in delegated mode) |
 | `execution_failed` | `agent_id`, `ref_seq`, `error` |
 | `approval` / `rejection` | `agent_id`, `ref_seq`, `approver` |
 | `anchor` | `agent_id` (`_shield`), `anchored_seq`, `anchored_hash`, `dry_run`, `tx_hash` |

@@ -8,12 +8,22 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 
 import httpx
 import qorsdk
 from qorsdk import msg
 
-FEE = {"amount": [{"denom": "uqor", "amount": "5000"}], "gas": "200000"}
+# The testnet enforces a minimum gas price (it rejected 5000 uqor for 200000 gas; minimum was 20000 uqor).
+# Defaults leave a safe margin and cost well under 0.1 QOR per transaction. Override with env vars if needed.
+DEFAULT_GAS = 300_000
+DEFAULT_GAS_PRICE = 0.15   # uqor per gas unit
+
+
+def fee() -> dict:
+    gas = int(os.getenv("AGENTSHIELD_GAS", DEFAULT_GAS))
+    price = float(os.getenv("AGENTSHIELD_GAS_PRICE", DEFAULT_GAS_PRICE))
+    return {"amount": [{"denom": "uqor", "amount": str(int(gas * price) + 1)}], "gas": str(gas)}
 
 
 def load_or_create_pqc(path: str) -> "qorsdk.PqcKeypair":
@@ -29,7 +39,7 @@ def load_or_create_pqc(path: str) -> "qorsdk.PqcKeypair":
 
 class ChainSigner:
     def __init__(self, pqc: "qorsdk.PqcKeypair", network: str | None = None,
-                 mnemonic: str | None = None, dry_run: bool | None = None):
+                 mnemonic: str | None = None, dry_run: bool | None = None, account_index: int = 0):
         self.network = network or os.getenv("AGENTSHIELD_NETWORK", "testnet")
         self.dry_run = (os.getenv("AGENTSHIELD_DRY_RUN", "1") == "1") if dry_run is None else dry_run
         mnemonic = mnemonic or os.getenv("AGENTSHIELD_MNEMONIC")
@@ -37,7 +47,7 @@ class ChainSigner:
             if not self.dry_run:
                 raise RuntimeError("AGENTSHIELD_MNEMONIC is required when not in dry-run mode")
             mnemonic = qorsdk.generate_mnemonic()          # throwaway, offline only
-        self.account = qorsdk.derive_native_account(mnemonic)
+        self.account = qorsdk.derive_native_account(mnemonic, account_index)
         self.pqc = pqc
         self.rest_url = qorsdk.PUBLIC_ENDPOINTS[self.network]["rest"]
         self.chain_id = qorsdk.create_client(self.network).network.chain_id or "qorechain-diana"
@@ -59,8 +69,35 @@ class ChainSigner:
             return {"dry_run": True}
         num, seq = self._account_numbers()
         res = qorsdk.ensure_pqc_registered(account=self.account, pqc_keypair=self.pqc, chain_id=self.chain_id,
-                                           account_number=num, rest_url=self.rest_url, fee=FEE, sequence=seq)
-        return {"result": str(res)}
+                                           account_number=num, rest_url=self.rest_url, fee=fee(), sequence=seq)
+        out = {"result": str(res)}
+        h = getattr(res, "tx_hash", None) or (res.get("tx_hash") if isinstance(res, dict) else None)
+        if h:
+            out.update(self._wait_for_tx(h))   # next tx needs the updated account sequence
+        return out
+
+    def wait_tx_response(self, tx_hash: str, timeout: float = 60.0) -> dict:
+        """Wait until the tx is in a block; return its tx_response. Raises if it failed on-chain.
+
+        Broadcast only proves the node accepted the tx into its mempool. The account sequence does not
+        advance, and the tx can still fail, until it is included in a block.
+        """
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            try:
+                r = httpx.get(f"{self.rest_url}/cosmos/tx/v1beta1/txs/{tx_hash}", timeout=20)
+                if r.status_code == 200:
+                    tr = r.json().get("tx_response", {})
+                    if int(tr.get("code", 0)) != 0:
+                        raise RuntimeError(f"tx {tx_hash} failed on-chain (code {tr.get('code')}): {tr.get('raw_log')}")
+                    return tr
+            except httpx.HTTPError:
+                pass                              # rate limit or network blip: keep polling
+            time.sleep(1.5)
+        raise TimeoutError(f"tx {tx_hash} was not included in a block within {timeout:.0f}s")
+
+    def _wait_for_tx(self, tx_hash: str, timeout: float = 60.0) -> dict:
+        return {"height": self.wait_tx_response(tx_hash, timeout).get("height")}
 
     # -- sending --------------------------------------------------------
     def send(self, to: str, amount: int, denom: str = "uqor", memo: str = "") -> dict:
@@ -70,7 +107,7 @@ class ChainSigner:
 
         def build(version):
             return qorsdk.build_hybrid_tx(account=self.account, pqc_keypair=self.pqc, messages=[message],
-                                          fee=FEE, chain_id=self.chain_id, account_number=num, sequence=seq,
+                                          fee=fee(), chain_id=self.chain_id, account_number=num, sequence=seq,
                                           memo=memo, sign_bytes_version=version)
 
         if self.dry_run:
@@ -81,15 +118,15 @@ class ChainSigner:
         tr = resp.get("tx_response", resp)
         if int(tr.get("code", 0)) != 0:
             raise RuntimeError(f"broadcast failed: {tr.get('raw_log')}")
-        return {"dry_run": False, "tx_hash": tr["txhash"]}
+        return {"dry_run": False, "tx_hash": tr["txhash"], **self._wait_for_tx(tr["txhash"])}
 
-    def send_msgs(self, messages: list, memo: str = "") -> dict:
+    def send_msgs(self, messages: list, memo: str = "", keep_response: bool = False) -> dict:
         """Sign and (unless dry-run) broadcast arbitrary messages as one hybrid transaction."""
         num, seq = self._account_numbers()
 
         def build(version):
             return qorsdk.build_hybrid_tx(account=self.account, pqc_keypair=self.pqc, messages=messages,
-                                          fee=FEE, chain_id=self.chain_id, account_number=num, sequence=seq,
+                                          fee=fee(), chain_id=self.chain_id, account_number=num, sequence=seq,
                                           memo=memo, sign_bytes_version=version)
 
         if self.dry_run:
@@ -100,7 +137,11 @@ class ChainSigner:
         tr = resp.get("tx_response", resp)
         if int(tr.get("code", 0)) != 0:
             raise RuntimeError(f"broadcast failed: {tr.get('raw_log')}")
-        return {"dry_run": False, "tx_hash": tr["txhash"]}
+        done = self.wait_tx_response(tr["txhash"])
+        out = {"dry_run": False, "tx_hash": tr["txhash"], "height": done.get("height")}
+        if keep_response:
+            out["tx_response"] = done
+        return out
 
     def fetch_onchain_rules(self, address: str | None = None):
         rest = qorsdk.RestClient(self.rest_url)

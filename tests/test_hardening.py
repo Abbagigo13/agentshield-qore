@@ -71,3 +71,59 @@ def test_mcp_server_lists_tools(tmp_path):
     s, _ = mk(tmp_path)
     tools = asyncio.run(make_server(s).list_tools())
     assert {t.name for t in tools} == {"pay", "spending_limits"}
+
+
+def test_wait_for_tx(tmp_path, monkeypatch):
+    import pytest
+    from agentshield_qore import chain as chain_mod
+    kp = qorsdk.generate_pqc_keypair()
+    signer = ChainSigner(kp, dry_run=True)
+
+    class R:
+        def __init__(self, status, body=None):
+            self.status_code, self._b = status, body or {}
+
+        def json(self):
+            return self._b
+
+    monkeypatch.setattr(chain_mod.time, "sleep", lambda s: None)
+    answers = [R(404), R(200, {"tx_response": {"code": 0, "height": "42"}})]
+    monkeypatch.setattr(chain_mod.httpx, "get", lambda *a, **k: answers.pop(0))
+    assert signer._wait_for_tx("AB") == {"height": "42"}
+    monkeypatch.setattr(chain_mod.httpx, "get", lambda *a, **k: R(200, {"tx_response": {"code": 5, "raw_log": "boom"}}))
+    with pytest.raises(RuntimeError, match="failed on-chain"):
+        signer._wait_for_tx("AB")
+
+
+def test_delegate_sign_and_link(tmp_path):
+    import nacl.signing
+    import qorsdk.authenticator as auth
+    from agentshield_qore.delegate import Delegate, DelegatedSigner, link_msgs
+    m = qorsdk.generate_mnemonic()
+    d = Delegate.from_mnemonic(m, 2)
+    owner = qorsdk.derive_native_account(m, 0).address
+    sig = d.sign_execute("qorechain-diana", owner, A, "500000uqor", 7)
+    digest = auth.cosmos_auth_sign_bytes("qorechain-diana", owner, d.pubkey, A, "500000uqor", 7)
+    nacl.signing.VerifyKey(d.pubkey).verify(digest, sig)          # raises if the signature is wrong
+    msgs = link_msgs(owner, "qorechain-diana", d, Policy())
+    assert [x.type_url.split(".")[-1] for x in msgs] == ["MsgUpdateSpendingRules", "MsgRegisterAuthenticator"]
+    kp = qorsdk.generate_pqc_keypair()
+    relayer = ChainSigner(kp, mnemonic=m, dry_run=True, account_index=1)
+    assert relayer.address != owner
+    out = DelegatedSigner(relayer, owner, d).send(A, 1000)
+    assert out["dry_run"] and out["via"] == "delegate" and len(out["tx_hash"]) == 64
+
+
+def test_delegated_mode_from_config(tmp_path, monkeypatch):
+    import pytest
+    from agentshield_qore.config import build_shield
+    monkeypatch.setenv("AGENTSHIELD_MODE", "delegated")
+    monkeypatch.setenv("AGENTSHIELD_DRY_RUN", "1")
+    monkeypatch.setenv("AGENTSHIELD_MNEMONIC", qorsdk.generate_mnemonic())
+    monkeypatch.setenv("AGENTSHIELD_POLICIES", str(tmp_path / "none.json"))
+    s = build_shield(str(tmp_path / "d"))
+    assert s.mode == "delegated"
+    r = s.submit(Intent("a", A, 1000))
+    assert r["verdict"] == "ALLOW" and r["execution"]["via"] == "delegate"
+    with pytest.raises(PermissionError):
+        s.sync_onchain()

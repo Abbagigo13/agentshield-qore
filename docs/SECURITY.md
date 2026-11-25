@@ -6,7 +6,16 @@ AgentShield is hackathon software for **testnet**. Treat this document as the ho
 - **A manipulated agent:** the agent has no key; every payment is checked by deterministic rules.
 - **Over-spending:** per-transaction, daily and rate limits; human approval above a threshold.
 - **Log tampering:** edits and mid-log deletions fail verification. Signatures are ML-DSA-87, so the record stays provable if classical signatures later fall.
-- **A compromised gateway (partly):** on-chain spending rules bound the numeric limits independently.
+- **A compromised gateway (in delegated mode):** the gateway holds only a delegate key that the chain bounds with on-chain spending rules. Verified: the chain refused a 1.5 QOR payment above a 1 QOR rule.
+
+## Delegated mode: what the chain enforces
+Verified on the testnet (see `docs/VERIFICATION.md`). Spending rules limit **linked delegate keys, not the account owner**:
+a payment signed by the owner's own key above the on-chain limit was accepted. So:
+- Run the gateway with `AGENTSHIELD_MODE=delegated`. The owner links a delegate key (`scripts/link_delegate.py`), a separate relayer
+  pays fees, and the delegate signs payments. The chain refuses anything above the rule.
+- Keep the **owner key out of the gateway**. In the demo one mnemonic derives all three roles; that defeats the protection.
+- Funds sit in the owner account. A stolen gateway can drain at most the on-chain per-tx and daily limits, per delegate key.
+- The allowlist, rate limit, injection scan and human approval remain gateway-only.
 
 ## Authentication
 | Caller | Mechanism | Notes |
@@ -37,7 +46,7 @@ Add `.env`, `data/` and `*.key` to `.gitignore`.
 | **Removing the last N records** | **Not detected** unless a later on-chain anchor exists. Anchor regularly |
 | Replaying an intent | Each submission is a new decision; there is no idempotency key yet |
 | Stolen admin token | Attacker can approve pending payments within policy and anchor; cannot exceed limits |
-| Stolen gateway host | Attacker holds the mnemonic and PQC key: limited by on-chain rules only if they are active |
+| Stolen gateway host | **Direct mode:** attacker holds the signing mnemonic and is not bounded by the chain. **Delegated mode:** attacker holds only the delegate key, bounded by on-chain limits (verified) |
 | Denial of service | No API rate limiting |
 | Multiple workers | Corrupt the chain. Run one |
 
@@ -46,11 +55,12 @@ Add `.env`, `data/` and `*.key` to `.gitignore`.
 - Constant-time comparison is not used for tokens (dictionary lookup, simple equality).
 - Injection patterns can be evaded by novel phrasing; they are one layer.
 - On-chain rules cannot express the allowlist, rate limit, scan or approval.
-- Live chain behaviour (registration, broadcast, rule enforcement on this account type) is unverified.
+- Not yet verified live: on-chain daily cap, delegate expiry and revocation.
 - Not independently audited.
 
 ## Safe operating checklist
 - [ ] Testnet-only wallet with minimal funds
+- [ ] Delegated mode on; owner key not on the gateway host
 - [ ] Admin token and agent keys changed
 - [ ] `.env` and `data/` excluded from git
 - [ ] TLS in front of the gateway

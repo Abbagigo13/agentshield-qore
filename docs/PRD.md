@@ -36,12 +36,13 @@ a tamper-evident, post-quantum signed receipt.
 |---|---|---|
 | F1 | Accept payment intents over HTTP and MCP | Done |
 | F2 | Evaluate rules R01 to R08 and E01; return verdict and reasons | Done |
-| F3 | Sign allowed payments as hybrid secp256k1 + ML-DSA-87 transactions | Done offline; live path untested |
+| F3 | Sign allowed payments as hybrid secp256k1 + ML-DSA-87 transactions | Done; verified on testnet |
 | F4 | Hold large payments for human approval; survive restart | Done |
 | F5 | Write hash-chained, ML-DSA-87 signed receipts for every outcome | Done |
 | F6 | Verify the full chain from the CLI and the API | Done |
-| F7 | Anchor the log head on-chain | Done offline; live path untested |
-| F8 | Mirror numeric limits into on-chain spending rules; report drift | Done offline; live path untested |
+| F7 | Anchor the log head on-chain | Done; verified on testnet |
+| F8 | Mirror numeric limits into on-chain spending rules; report drift | Done; verified (rule stored and read back) |
+| F12 | Delegated mode: chain refuses payments above the limit | Done; verified on testnet |
 | F9 | Per-agent policies from a JSON file | Done |
 | F10 | Website: landing, dashboard, attack playground, verify/tamper demo | Done (browser simulation) |
 | F11 | Live dashboard backed by the real gateway | Not started |
