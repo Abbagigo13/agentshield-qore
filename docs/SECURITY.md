@@ -41,6 +41,7 @@ Add `.env`, `data/` and `*.key` to `.gitignore`.
 |---|---|
 | Prompt injection to pay an attacker | Mitigated: allowlist, limits, injection scan, approval. Scan is heuristic |
 | Agent splitting a payment into small ones | Mitigated by the daily cap and rate limit |
+| Agent probing with retries and reworded requests | Mitigated by R09: quarantine after repeated denials, human release |
 | Agent changing recipient to dodge the allowlist | Blocked by R04; attempts are logged |
 | Editing or removing a record mid-log | Detected by `verify` |
 | **Removing the last N records** | **Not detected** unless a later on-chain anchor exists. Anchor regularly |
@@ -54,7 +55,7 @@ Add `.env`, `data/` and `*.key` to `.gitignore`.
 - No TLS, CORS policy, API rate limiting, key rotation, HSM/KMS support or encryption of the log at rest.
 - Constant-time comparison is not used for tokens (dictionary lookup, simple equality).
 - Injection patterns can be evaded by novel phrasing; they are one layer. They can also flag an honest agent that merely quotes an attack in its rationale (seen once in the demo).
-- An agent that is denied can retry with reworded memos. The gateway keeps denying while the rule applies, but nothing yet escalates a persistently denied agent to a human.
+- An agent that is denied can retry with reworded memos. R09 quarantines it after repeated denials (default 5 in 10 minutes), so further requests need a human. Rate-limit denials count too, so a buggy honest agent can quarantine itself; a human releases it.
 - On-chain rules cannot express the allowlist, rate limit, scan or approval.
 - Not yet verified live: on-chain daily cap, delegate expiry and revocation.
 - Not independently audited.

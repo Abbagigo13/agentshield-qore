@@ -127,3 +127,31 @@ def test_delegated_mode_from_config(tmp_path, monkeypatch):
     assert r["verdict"] == "ALLOW" and r["execution"]["via"] == "delegate"
     with pytest.raises(PermissionError):
         s.sync_onchain()
+
+
+def test_repeated_denials_quarantine_release_and_window(tmp_path):
+    kp = qorsdk.generate_pqc_keypair()
+    log = ReceiptLog(str(tmp_path / "r.jsonl"), kp)
+    s = Shield(Policy(allowed_recipients=frozenset({A}), max_denials=3, denial_window=600), log, ChainSigner(kp, dry_run=True))
+    B = qorsdk.derive_native_account(qorsdk.generate_mnemonic()).address
+    for i in range(3):                                            # three denials (not allowlisted)
+        assert s.submit(Intent("a", B, 10), now=1000.0 + i)["verdict"] == "DENY"
+    assert any(r["kind"] == "quarantine" for r in log.records())
+    r = s.submit(Intent("a", A, 10), now=1010.0)                  # honest payment, but the agent is quarantined
+    assert r["verdict"] == "ESCALATE" and r["execution"] is None
+    rec = [x for x in log.records() if x["kind"] == "decision"][-1]
+    assert "R09" in rec["rule_ids"]
+    assert s.agent_status("a", now=1010.0)["quarantined"]
+    # restart: state is rebuilt from the signed log
+    s2 = Shield(Policy(allowed_recipients=frozenset({A}), max_denials=3), ReceiptLog(str(tmp_path / "r.jsonl"), kp),
+                ChainSigner(kp, dry_run=True))
+    assert s2.agent_status("a", now=1011.0)["quarantined"]
+    s2.release("a", "human", now=1012.0)                          # a human releases it
+    assert not s2.agent_status("a", now=1013.0)["quarantined"]
+    assert s2.submit(Intent("a", A, 10), now=1014.0)["verdict"] == "ALLOW"
+    # window: old denials stop counting
+    for i in range(3):
+        s2.submit(Intent("a", B, 10), now=2000.0 + i)
+    assert s2.agent_status("a", now=2003.0)["quarantined"]
+    assert not s2.agent_status("a", now=2000.0 + 700)["quarantined"]
+    assert verify_log(s2.log.path)["ok"]

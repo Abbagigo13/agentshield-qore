@@ -18,7 +18,7 @@ agent --intent--> [policy engine] --ALLOW--> [hybrid secp256k1 + ML-DSA-87 tx] -
 ```
 
 ## Features
-- **Policy engine:** nine deterministic rules (address, denom, amount, allowlist, per-tx limit, daily cap, rate limit, prompt-injection scan, human-approval threshold). No model in the decision path.
+- **Policy engine:** ten deterministic rules (address, denom, amount, allowlist, per-tx limit, daily cap, rate limit, prompt-injection scan, quarantine after repeated denials, human-approval threshold). No model in the decision path.
 - **Hybrid post-quantum transactions:** secp256k1 + ML-DSA-87 through the official `qorechain-sdk`.
 - **Signed receipts:** every decision and execution is a hash-chained, ML-DSA-87 signed record. Edits and deletions in the middle are detected.
 - **On-chain anchor:** commit the log head in a transaction memo.
@@ -31,7 +31,7 @@ agent --intent--> [policy engine] --ALLOW--> [hybrid secp256k1 + ML-DSA-87 tx] -
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1          # Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
-python -m pytest -q                    # 20 passed
+python -m pytest -q                    # 22 passed
 python -m agentshield_qore.cli demo    # offline demo, no keys needed
 uvicorn agentshield_qore.gateway:app --port 8080
 ```

@@ -42,6 +42,8 @@ class Policy:
     allowed_denoms: frozenset = frozenset({"uqor"})
     max_per_minute: int = 5
     scan_text: bool = True
+    max_denials: int = 5                   # R09: this many denials in the window quarantines the agent (0 = off)
+    denial_window: int = 600               # seconds
 
 
 @dataclass
@@ -61,7 +63,7 @@ def scan_text(*texts: str) -> list[str]:
 
 
 def evaluate(intent: Intent, policy: Policy, history: list[tuple[float, int]],
-             now: float | None = None) -> Decision:
+             now: float | None = None, recent_denials: int = 0) -> Decision:
     """history = [(timestamp, amount)] of this agent's executed spends."""
     now = time.time() if now is None else now
     reasons: list[str] = []
@@ -93,8 +95,15 @@ def evaluate(intent: Intent, policy: Policy, history: list[tuple[float, int]],
         if scan_text(intent.memo, intent.rationale):
             deny("R08", "possible prompt injection in memo/rationale")
 
+    quarantined = policy.max_denials > 0 and recent_denials >= policy.max_denials
+    note = (f"agent quarantined: {recent_denials} denied requests in the last {max(1, policy.denial_window // 60)} "
+            f"min; a human must review")
     if ids:
+        if quarantined:
+            deny("R09", note)
         return Decision("DENY", reasons, ids)
+    if quarantined:
+        return Decision("ESCALATE", [note], ["R09"])
     if intent.amount > policy.escalate_above:
         return Decision("ESCALATE", [f"amount {intent.amount} above auto-approve threshold {policy.escalate_above}"], ["E01"])
     return Decision("ALLOW", ["all rules passed"], [])

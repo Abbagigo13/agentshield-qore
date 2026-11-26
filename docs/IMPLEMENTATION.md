@@ -11,13 +11,14 @@
 | Delegated mode (delegate key + relayer, chain-enforced limits) | **Verified**: the chain refused a 1.5 QOR payment above the 1 QOR rule |
 | Human approvals, restart-safe | Built, tested |
 | Per-agent policies, `.env` loading | Built, tested |
+| Repeated-denials quarantine (R09), human release, survives restart | Built, tested offline |
 | HTTP gateway | Built, smoke-tested |
 | MCP server (`pay`, `spending_limits`) | Built, tool listing tested |
 | Website (landing, 7 dashboard pages, docs sections) | Built; runs a browser simulation, not the real gateway |
 | Live dashboard against the gateway | Not started |
 | Demo agent with a real LLM | Not started |
 
-20 automated tests pass on Linux and on Windows (Python 3.13, `qorechain-sdk` 0.14.0).
+22 automated tests pass on Linux and on Windows (Python 3.13, `qorechain-sdk` 0.14.0).
 
 ## Build order used
 1. Policy engine and tests (pure logic first).

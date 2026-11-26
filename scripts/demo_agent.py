@@ -96,7 +96,9 @@ if args.hijacked:
     burst = res["burst"]
     print(f"\nattacks to the attacker address: {sum(len(res[k]) for k in ('drain', 'quiet', 'split'))} tried, "
           f"{'ALL BLOCKED' if not bad else 'SOME GOT THROUGH: CHECK RECEIPTS'}")
-    print(f"burst of 8: {burst.count('ALLOW')} allowed, {burst.count('DENY')} blocked by the rate limit")
+    print(f"burst of 8 (second agent): {burst.count('ALLOW')} allowed, {burst.count('DENY')} blocked by the rate limit")
+    print(f"after repeated denials the compromised agent is quarantined: its honest-looking request got {res['after'][0]} "
+          f"(a human must review)")
 
 v = verify_log(shield.log.path)
 print(f"\nreceipt log: {v['records']} signed receipts, chain valid = {v['ok']}  ({shield.log.path})")

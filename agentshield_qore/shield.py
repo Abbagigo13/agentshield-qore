@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import threading
+import time
 from dataclasses import asdict
 
 from . import onchain
@@ -34,11 +35,33 @@ class Shield:
                 done.add(r["ref_seq"])
         return {s: i for s, i in esc.items() if s not in done}
 
+    def _recent_denials(self, agent_id: str, now: float) -> int:
+        window = self.policy_for(agent_id).denial_window
+        return self.log.denial_count(agent_id, max(now - window, self.log.released.get(agent_id, float("-inf"))))
+
+    def agent_status(self, agent_id: str, now: float | None = None) -> dict:
+        t = time.time() if now is None else now
+        pol = self.policy_for(agent_id)
+        n = self._recent_denials(agent_id, t)
+        return {"agent_id": agent_id, "recent_denials": n, "max_denials": pol.max_denials,
+                "window_s": pol.denial_window, "quarantined": pol.max_denials > 0 and n >= pol.max_denials}
+
+    def release(self, agent_id: str, approver: str, now: float | None = None) -> dict:
+        """A human clears an agent's quarantine. Earlier denials stop counting from this moment."""
+        with self.lock:
+            return self.log.append("release", {"agent_id": agent_id, "approver": approver}, now)
+
     def submit(self, intent: Intent, now: float | None = None) -> dict:
         with self.lock:
-            d: Decision = evaluate(intent, self.policy_for(intent.agent_id), self.log.history(intent.agent_id), now)
+            t = time.time() if now is None else now
+            pol = self.policy_for(intent.agent_id)
+            d: Decision = evaluate(intent, pol, self.log.history(intent.agent_id), t,
+                                   recent_denials=self._recent_denials(intent.agent_id, t))
             rec = self.log.append("decision", {"agent_id": intent.agent_id, "intent": asdict(intent),
-                                               "verdict": d.verdict, "reasons": d.reasons, "rule_ids": d.rule_ids}, now)
+                                               "verdict": d.verdict, "reasons": d.reasons, "rule_ids": d.rule_ids}, t)
+            if d.verdict == "DENY" and pol.max_denials > 0 and self._recent_denials(intent.agent_id, t) == pol.max_denials:
+                self.log.append("quarantine", {"agent_id": intent.agent_id, "after_seq": rec["seq"],
+                                               "recent_denials": pol.max_denials, "window_s": pol.denial_window}, t)
             out = {"verdict": d.verdict, "reasons": d.reasons, "decision_seq": rec["seq"], "execution": None}
             if d.verdict == "ALLOW":
                 out["execution"] = self._execute(rec["seq"], intent, now)

@@ -3,7 +3,7 @@
 ## Run
 ```bash
 pip install -r requirements.txt
-python -m pytest -q          # 20 tests, offline, about 10 seconds
+python -m pytest -q          # 22 tests, offline, about 10 seconds
 ```
 No network, wallet or funds are used. Transactions are built and signed in dry-run mode.
 
@@ -12,8 +12,8 @@ No network, wallet or funds are used. Transactions are built and signed in dry-r
 |---|---|---|
 | `tests/test_core.py` | 6 | Allow, every deny rule, daily and rate limits, escalate then approve, log verification, tamper and deletion detection |
 | `tests/test_onchain.py` | 4 | Rule generation and validation, update message, drift report cases, dry-run sync receipt |
-| `tests/test_demo_agent.py` | 1 | Agent loop with a scripted model: ALLOW, ESCALATE and DENY, bad tool calls survive, log verifies |
-| `tests/test_hardening.py` | 9 | Pending approvals after restart, per-agent policy, 20 concurrent submissions, `.env` and policy file loading, MCP tools, MCP tool listing, waiting for tx inclusion, delegate signing and link messages, delegated mode from config |
+| `tests/test_demo_agent.py` | 2 | Agent loop with a scripted model (ALLOW, ESCALATE, DENY, bad tool calls survive); hijack scenario ends in quarantine |
+| `tests/test_hardening.py` | 10 | Pending approvals after restart, per-agent policy, 20 concurrent submissions, `.env` and policy file loading, MCP tools, MCP tool listing, waiting for tx inclusion, delegate signing and link messages, delegated mode from config, R09 quarantine, release, restart and window |
 
 ## Manual checks
 ```bash

@@ -45,6 +45,7 @@ def test_hijacked_agent_is_contained(tmp_path):
     shield = Shield(Policy(allowed_recipients=frozenset({VENDOR})), ReceiptLog(str(tmp_path / "r.jsonl"), kp),
                     ChainSigner(kp, dry_run=True))
     res = hijack_attacks(shield, VENDOR, ATTACKER, out=lambda *_: None)
-    assert res["drain"] == ["DENY"] and res["quiet"] == ["DENY"] and res["split"] == ["DENY"] * 4
     assert res["burst"] == ["ALLOW"] * 5 + ["DENY"] * 3          # rate limit: 5 per minute
+    assert res["drain"] == ["DENY"] and res["quiet"] == ["DENY"] and res["split"] == ["DENY"] * 4
+    assert res["after"] == ["ESCALATE"]                            # R09: quarantined after repeated denials
     assert verify_log(shield.log.path)["ok"]

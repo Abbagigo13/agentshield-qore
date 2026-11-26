@@ -27,6 +27,8 @@ Integers in base units. `1 QOR = 1,000,000 uqor`.
 | GET | `/v1/onchain` | none | Compare on-chain spending rules with gateway policy |
 | POST | `/v1/onchain/sync` | admin | Write gateway limits on-chain (direct mode; returns `409` in delegated mode) |
 | GET | `/v1/health` | none | Mode, network, owner and signer addresses |
+| GET | `/v1/agents/{agent_id}` | admin | Recent denials and whether the agent is quarantined |
+| POST | `/v1/agents/{agent_id}/release` | admin | Clear a quarantine after human review |
 
 ### POST /v1/intents
 Request:
@@ -74,6 +76,7 @@ Returns `enforced_on_chain`, `in_sync`, per-field `checks` (`match`, `chain_loos
 | R06 | 24 hour spend within daily limit |
 | R07 | Within rate limit (default 5 per minute) |
 | R08 | No prompt-injection patterns in memo or rationale |
+| R09 | Repeated denials: after `max_denials` (default 5) denied requests within `denial_window` (default 10 min) the agent is **quarantined**: a request that would be ALLOW becomes ESCALATE, and DENY stays DENY, until a human releases it |
 | E01 | Above the human-approval threshold, so ESCALATE |
 
 ## Errors

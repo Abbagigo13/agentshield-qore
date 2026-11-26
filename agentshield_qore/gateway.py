@@ -98,3 +98,16 @@ def health():
     s = shield.signer
     return {"mode": shield.mode, "network": s.network, "chain_id": s.chain_id, "dry_run": s.dry_run,
             "owner": getattr(s, "owner", s.address), "relayer_or_signer": s.address}
+
+
+@app.get("/v1/agents/{agent_id}")
+def agent_status(agent_id: str, x_admin_token: str | None = Header(None)):
+    _admin(x_admin_token)
+    return shield.agent_status(agent_id)
+
+
+@app.post("/v1/agents/{agent_id}/release")
+def release_agent(agent_id: str, x_admin_token: str | None = Header(None)):
+    """Clear an agent's quarantine (R09) after a human has reviewed what it was doing."""
+    _admin(x_admin_token)
+    return shield.release(agent_id, "admin")

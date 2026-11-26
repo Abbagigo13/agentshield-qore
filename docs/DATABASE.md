@@ -31,6 +31,8 @@ Common fields on every record:
 | `execution` | `agent_id`, `ref_seq`, `amount`, `to`, `dry_run`, `tx_hash`, `height` (live), `via` (`delegate` in delegated mode) |
 | `execution_failed` | `agent_id`, `ref_seq`, `error` |
 | `approval` / `rejection` | `agent_id`, `ref_seq`, `approver` |
+| `quarantine` | `agent_id`, `after_seq`, `recent_denials`, `window_s` (written when an agent crosses the R09 threshold) |
+| `release` | `agent_id`, `approver` (a human cleared the quarantine; earlier denials stop counting) |
 | `anchor` | `agent_id` (`_shield`), `anchored_seq`, `anchored_hash`, `dry_run`, `tx_hash` |
 | `onchain_rules` | `agent_id` (`_shield`), `rule_id`, `per_tx_limit`, `daily_limit`, `dry_run`, `tx_hash` |
 
@@ -38,6 +40,7 @@ Amounts are integers in base units (`uqor`, 1 QOR = 1,000,000 uqor).
 
 ## Derived state (not stored)
 - **Spend history** for limits: built from `execution` records.
+- **Recent denials and quarantine (R09):** `decision` records with verdict `DENY` per agent inside the window, ignoring any before the agent's last `release`.
 - **Pending approvals:** `decision` with verdict `ESCALATE` and no later `approval`/`rejection` with the same `ref_seq`.
 
 ## Anchor memo

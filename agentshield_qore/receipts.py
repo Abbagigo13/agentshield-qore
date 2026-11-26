@@ -28,6 +28,8 @@ class ReceiptLog:
         self.path, self.kp = path, keypair
         self.seq, self.prev = 0, GENESIS
         self.executions: list[tuple[str, float, int]] = []   # (agent, ts, amount)
+        self.denials: dict[str, list[float]] = {}            # agent -> timestamps of DENY decisions
+        self.released: dict[str, float] = {}                 # agent -> last release timestamp
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         pub = path + ".pub"
         if not os.path.exists(pub):
@@ -36,8 +38,18 @@ class ReceiptLog:
             for line in open(path):
                 r = json.loads(line)
                 self.seq, self.prev = r["seq"], r["hash"]
-                if r["kind"] == "execution":
-                    self.executions.append((r["agent_id"], r["ts"], r["amount"]))
+                self._index(r)
+
+    def _index(self, r: dict) -> None:
+        if r["kind"] == "execution":
+            self.executions.append((r["agent_id"], r["ts"], r["amount"]))
+        elif r["kind"] == "decision" and r.get("verdict") == "DENY":
+            self.denials.setdefault(r["agent_id"], []).append(r["ts"])
+        elif r["kind"] == "release":
+            self.released[r["agent_id"]] = r["ts"]
+
+    def denial_count(self, agent_id: str, since: float) -> int:
+        return sum(1 for t in self.denials.get(agent_id, ()) if t > since)
 
     def append(self, kind: str, payload: dict, now: float | None = None) -> dict:
         body = {"v": 1, "seq": self.seq + 1, "ts": time.time() if now is None else now,
@@ -48,8 +60,7 @@ class ReceiptLog:
         with open(self.path, "a") as f:
             f.write(json.dumps(rec, sort_keys=True) + "\n")
         self.seq, self.prev = rec["seq"], h
-        if kind == "execution":
-            self.executions.append((rec["agent_id"], rec["ts"], rec["amount"]))
+        self._index(rec)
         return rec
 
     def history(self, agent_id: str) -> list[tuple[float, int]]:

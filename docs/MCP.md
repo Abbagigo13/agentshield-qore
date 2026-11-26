@@ -18,7 +18,7 @@ Request a payment. `amount_uqor` is an integer in base units (1 QOR = 1,000,000 
 ```
 ### `spending_limits()`
 Returns `per_tx_limit_uqor`, `daily_limit_uqor`, `human_approval_above_uqor`, `max_per_minute`, `recipient_allowlist`
-for the agent this server represents.
+for the agent this server represents, plus `denied_requests_recently`, `quarantined` and `quarantine_after_denials` (R09).
 
 ## Agent identity
 One MCP server process represents one agent: `AGENTSHIELD_MCP_AGENT` (default `mcp-agent`). Its limits come from

@@ -19,7 +19,7 @@ This project was built with AI assistance. This file records how, for the QoreCh
 - Registers the project, controls the repository, and will run and verify the live testnet steps.
 
 ## How the output was checked
-- 20 automated tests (offline). Run `python -m pytest -q`.
+- 22 automated tests (offline). Run `python -m pytest -q`.
 - An offline end-to-end demo: `python -m agentshield_qore.cli demo`.
 - The human ran the tests and demo locally.
 

@@ -42,6 +42,7 @@ a tamper-evident, post-quantum signed receipt.
 | F6 | Verify the full chain from the CLI and the API | Done |
 | F7 | Anchor the log head on-chain | Done; verified on testnet |
 | F8 | Mirror numeric limits into on-chain spending rules; report drift | Done; verified (rule stored and read back) |
+| F13 | Quarantine an agent after repeated denials; a human releases it (R09) | Done; tested offline |
 | F12 | Delegated mode: chain refuses payments above the limit | Done; verified on testnet |
 | F9 | Per-agent policies from a JSON file | Done |
 | F10 | Website: landing, dashboard, attack playground, verify/tamper demo | Done (browser simulation) |
