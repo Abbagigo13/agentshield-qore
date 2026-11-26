@@ -19,7 +19,7 @@ Optional MCP server: `pip install -r requirements-mcp.txt`.
 
 ## 2. Verify offline
 ```bash
-python -m pytest -q                    # expect 19 passed
+python -m pytest -q                    # expect 20 passed
 python -m agentshield_qore.cli demo     # attacks blocked, tampered log detected
 ```
 No `.env` and no network are needed for this.

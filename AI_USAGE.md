@@ -19,7 +19,7 @@ This project was built with AI assistance. This file records how, for the QoreCh
 - Registers the project, controls the repository, and will run and verify the live testnet steps.
 
 ## How the output was checked
-- 19 automated tests (offline). Run `python -m pytest -q`.
+- 20 automated tests (offline). Run `python -m pytest -q`.
 - An offline end-to-end demo: `python -m agentshield_qore.cli demo`.
 - The human ran the tests and demo locally.
 
@@ -28,6 +28,9 @@ On 24 November 2026 the human ran the live scripts on the QoreChain testnet: hyb
 on-chain spending rules, and chain-enforced refusal of an over-limit payment by a delegate key. Evidence: `docs/VERIFICATION.md`.
 The live run also exposed three bugs in AI-written code (fee too low, account-sequence timing, a self-payment rule), now fixed,
 and showed that the first design did not give chain-level protection, which led to delegated mode.
+
+## Demo agent
+A tool-calling agent (`scripts/demo_agent.py`) uses a Meta Muse model through Meta's OpenAI-compatible API. The loop is tested offline with a scripted model; it has not been run against the real API from the sandbox.
 
 ## Not yet verified
 On-chain daily cap, delegate expiry and revocation, and the MCP server against a real client.

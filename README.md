@@ -31,7 +31,7 @@ agent --intent--> [policy engine] --ALLOW--> [hybrid secp256k1 + ML-DSA-87 tx] -
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1          # Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
-python -m pytest -q                    # 19 passed
+python -m pytest -q                    # 20 passed
 python -m agentshield_qore.cli demo    # offline demo, no keys needed
 uvicorn agentshield_qore.gateway:app --port 8080
 ```
@@ -53,12 +53,13 @@ Full instructions, including going live on testnet: [docs/SETUP.md](docs/SETUP.m
 | [docs/MCP.md](docs/MCP.md) | Connecting MCP agents |
 | [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) | HTTP clients, agent frameworks, QoreChain |
 | [docs/TESTING.md](docs/TESTING.md) | Test suite and how to extend it |
+| [docs/DEMO_AGENT.md](docs/DEMO_AGENT.md) | A real LLM agent facing a poisoned invoice |
 | [docs/VERIFICATION.md](docs/VERIFICATION.md) | What was proven on the live testnet, with transaction hashes |
 
 ## Layout
 ```
 agentshield_qore/   policy.py receipts.py chain.py shield.py onchain.py delegate.py config.py gateway.py mcp_server.py cli.py
-scripts/            live_check.py enforcement_check.py delegation_check.py link_delegate.py
+scripts/            live_check.py enforcement_check.py delegation_check.py link_delegate.py demo_agent.py
 tests/              test_core.py test_onchain.py test_hardening.py
 web/index.html      landing page and dashboard (self-contained)
 docs/               the documents above

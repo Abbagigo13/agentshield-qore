@@ -17,7 +17,7 @@
 | Live dashboard against the gateway | Not started |
 | Demo agent with a real LLM | Not started |
 
-19 automated tests pass on Linux and on Windows (Python 3.13, `qorechain-sdk` 0.14.0).
+20 automated tests pass on Linux and on Windows (Python 3.13, `qorechain-sdk` 0.14.0).
 
 ## Build order used
 1. Policy engine and tests (pure logic first).
