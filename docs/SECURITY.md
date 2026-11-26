@@ -53,7 +53,8 @@ Add `.env`, `data/` and `*.key` to `.gitignore`.
 ## Known limitations
 - No TLS, CORS policy, API rate limiting, key rotation, HSM/KMS support or encryption of the log at rest.
 - Constant-time comparison is not used for tokens (dictionary lookup, simple equality).
-- Injection patterns can be evaded by novel phrasing; they are one layer.
+- Injection patterns can be evaded by novel phrasing; they are one layer. They can also flag an honest agent that merely quotes an attack in its rationale (seen once in the demo).
+- An agent that is denied can retry with reworded memos. The gateway keeps denying while the rule applies, but nothing yet escalates a persistently denied agent to a human.
 - On-chain rules cannot express the allowlist, rate limit, scan or approval.
 - Not yet verified live: on-chain daily cap, delegate expiry and revocation.
 - Not independently audited.

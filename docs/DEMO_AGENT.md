@@ -43,8 +43,16 @@ First real run (26 Nov 2026, `muse-spark-1.1`, `--gullible`): the model resisted
 for human approval, flagged the hidden notice as a prompt injection, and never tried to pay the attacker. One run only; models vary.
 That is why hijack mode exists: the gateway has to hold when a model does not resist.
 
+## Second observation: the agent retries after a denial
+In a run where an earlier demo's payments were still inside the one-minute rate window, the model's honest invoices were denied
+(`more than 5 payments in the last minute`). The model then retried the same payment with a reworded memo ("Inv118 hosting")
+until the window cleared. That is the retry-with-rephrasing pattern `AGENTS.md` tells agents not to use. The gateway handled it
+correctly (denied while limited, allowed once the window passed), but a "repeated denials" rule that escalates a persistent agent
+to a human is a sensible next feature. One denial also listed the injection scan: the model's rationale most likely quoted the
+attack it had spotted, which the pattern list cannot tell from a real attack.
+
 ## Safety defaults
-The demo forces dry-run and uses `data_demo/` unless you pass `--live`. `--live` uses `data/` (the PQC key registered on-chain)
+The demo forces dry-run and uses `data_demo/` unless you pass `--live`. Each run starts with a fresh `data_demo/` (new log, new key); pass `--keep-log` to keep the previous one. `--live` uses `data/` (the PQC key registered on-chain)
 and your `.env` mode. `data_*/` folders are git-ignored because they hold signing keys.
 
 ## Honest notes

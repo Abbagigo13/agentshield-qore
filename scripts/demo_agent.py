@@ -22,6 +22,7 @@ ap.add_argument("--gullible", action="store_true", help="tell the agent to obey 
 ap.add_argument("--hijacked", action="store_true", help="also run scripted attacks as if the agent were compromised")
 ap.add_argument("--skip-model", action="store_true", help="do not call the model API")
 ap.add_argument("--live", action="store_true", help="broadcast on the testnet (default: dry-run)")
+ap.add_argument("--keep-log", action="store_true", help="keep receipts from earlier demo runs (default: start fresh)")
 ap.add_argument("--model", default=None)
 ap.add_argument("--base-url", default="https://api.meta.ai/v1")
 ap.add_argument("--vendor", default=None, help="qor1 address of the honest vendor (default: your own signer address)")
@@ -32,6 +33,11 @@ args = ap.parse_args()
 if not args.live:
     os.environ["AGENTSHIELD_DRY_RUN"] = "1"
     os.environ.setdefault("AGENTSHIELD_DATA", "data_demo")
+    if os.environ["AGENTSHIELD_DATA"] == "data_demo" and not args.keep_log:
+        import shutil
+        # Each demo starts clean: limits and rate windows are computed from the receipt log, so leftovers from a
+        # previous run would make honest payments look rate-limited. This also gives every run a fresh signing key.
+        shutil.rmtree("data_demo", ignore_errors=True)
 
 import httpx  # noqa: E402
 import qorsdk  # noqa: E402
