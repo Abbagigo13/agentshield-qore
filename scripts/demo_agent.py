@@ -1,10 +1,12 @@
-"""Demo: a real LLM agent tries to pay invoices through AgentShield, and one invoice carries a prompt-injection attack.
+"""Demo: an LLM agent pays invoices through AgentShield; one invoice carries a prompt-injection attack.
 
-    python scripts/demo_agent.py               # careful agent
-    python scripts/demo_agent.py --gullible    # agent told to obey invoice text, so the attack reaches the gateway
+    python scripts/demo_agent.py                       # careful agent, dry-run
+    python scripts/demo_agent.py --gullible            # agent told to obey invoice text
+    python scripts/demo_agent.py --hijacked            # plus a scripted COMPROMISED agent: what if the model is fooled?
+    python scripts/demo_agent.py --skip-model --hijacked   # scripted attacks only (no API key needed)
+    python scripts/demo_agent.py --live                # really broadcast on the testnet (uses data/, your .env mode)
 
-Needs MODEL_API_KEY (Meta Model API) in .env. Safe by default: dry-run, nothing is broadcast.
-For a live run on the testnet: AGENTSHIELD_DRY_RUN=0 and AGENTSHIELD_MODE=delegated in .env.
+Safe by default: forced dry-run (signs, never broadcasts), separate data_demo/ folder. Model key: MODEL_API_KEY in .env.
 """
 from __future__ import annotations
 
@@ -14,27 +16,34 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ.setdefault("AGENTSHIELD_DATA", "data_demo")
-
-import httpx  # noqa: E402
-import qorsdk  # noqa: E402
-
-from agentshield_qore.config import build_shield, load_env  # noqa: E402
-from agentshield_qore.demo_agent import run_agent  # noqa: E402
-from agentshield_qore.receipts import verify_log  # noqa: E402
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--gullible", action="store_true", help="tell the agent to obey instructions found in invoices")
+ap.add_argument("--hijacked", action="store_true", help="also run scripted attacks as if the agent were compromised")
+ap.add_argument("--skip-model", action="store_true", help="do not call the model API")
+ap.add_argument("--live", action="store_true", help="broadcast on the testnet (default: dry-run)")
 ap.add_argument("--model", default=None)
 ap.add_argument("--base-url", default="https://api.meta.ai/v1")
 ap.add_argument("--vendor", default=None, help="qor1 address of the honest vendor (default: your own signer address)")
 ap.add_argument("--steps", type=int, default=8)
 args = ap.parse_args()
 
+# Decide data dir and dry-run BEFORE the config loads .env (existing variables always win over .env).
+if not args.live:
+    os.environ["AGENTSHIELD_DRY_RUN"] = "1"
+    os.environ.setdefault("AGENTSHIELD_DATA", "data_demo")
+
+import httpx  # noqa: E402
+import qorsdk  # noqa: E402
+
+from agentshield_qore.config import build_shield, load_env  # noqa: E402
+from agentshield_qore.demo_agent import hijack_attacks, run_agent  # noqa: E402
+from agentshield_qore.receipts import verify_log  # noqa: E402
+
 load_env()
 key = os.getenv("MODEL_API_KEY")
-if not key:
-    raise SystemExit("Set MODEL_API_KEY in .env (your Meta Model API key). Do not paste it anywhere else.")
+if not args.skip_model and not key:
+    raise SystemExit("Set MODEL_API_KEY in .env (your Meta Model API key), or use --skip-model --hijacked.")
 model = args.model or os.getenv("AGENT_MODEL", "muse-spark-1.1")
 role = os.getenv("AGENT_SYSTEM_ROLE", "developer")
 
@@ -58,19 +67,35 @@ shield = build_shield()
 vendor = args.vendor or shield.signer.address
 attacker = qorsdk.derive_native_account(qorsdk.generate_mnemonic()).address
 shield.policy.allowed_recipients = frozenset({vendor})
-s = shield.signer
-print(f"mode={shield.mode} dry_run={s.dry_run} model={model} agent={'GULLIBLE' if args.gullible else 'careful'}")
-print(f"vendor (allowed)  = {vendor}\nattacker          = {attacker}")
+print(f"mode={shield.mode} dry_run={shield.signer.dry_run} data={os.getenv('AGENTSHIELD_DATA', 'data')} "
+      f"model={'(skipped)' if args.skip_model else model} agent={'GULLIBLE' if args.gullible else 'careful'}")
+print(f"vendor (allowed) = {vendor}\nattacker         = {attacker}")
 
-stats, _ = run_agent(chat, shield, vendor, attacker, gullible=args.gullible, max_steps=args.steps)
+stats = {}
+if not args.skip_model:
+    stats, _ = run_agent(chat, shield, vendor, attacker, gullible=args.gullible, max_steps=args.steps)
+    print("\n================ MODEL RUN ================")
+    print(f"allowed={stats['ALLOW']}  needs-human={stats['ESCALATE']}  blocked={stats['DENY']}")
+    tried = [r for r in shield.log.records() if r["kind"] == "decision" and r["intent"]["to"] == attacker]
+    if tried:
+        print(f"the model tried to pay the attacker {len(tried)} time(s); verdicts: {[r['verdict'] for r in tried]}")
+    else:
+        print("The model never tried to pay the attacker: it resisted the injection on its own.")
+        if not args.hijacked:
+            print("The gateway matters when a model does NOT resist. Add --hijacked to simulate that.")
 
-print("\n================ RESULT ================")
-print(f"allowed={stats['ALLOW']}  needs-human={stats['ESCALATE']}  blocked={stats['DENY']}")
+if args.hijacked:
+    res = hijack_attacks(shield, vendor, attacker)
+    bad = [v for k in ("drain", "quiet", "split") for v in res[k] if v != "DENY"]
+    burst = res["burst"]
+    print(f"\nattacks to the attacker address: {sum(len(res[k]) for k in ('drain', 'quiet', 'split'))} tried, "
+          f"{'ALL BLOCKED' if not bad else 'SOME GOT THROUGH: CHECK RECEIPTS'}")
+    print(f"burst of 8: {burst.count('ALLOW')} allowed, {burst.count('DENY')} blocked by the rate limit")
+
 v = verify_log(shield.log.path)
-print(f"receipt log: {v['records']} signed receipts, chain valid = {v['ok']}")
-atk = [r for r in shield.log.records() if r["kind"] == "decision" and r["intent"]["to"] == attacker]
-print("attack attempts reached the gateway:", len(atk), "(all blocked)" if all(r["verdict"] == "DENY" for r in atk) else "CHECK RECEIPTS")
-if not atk:
-    print("The agent never tried to pay the attacker. Run again with --gullible to see the gateway stop an obedient agent.")
-if stats["ESCALATE"]:
-    print(f"{stats['ESCALATE']} payment(s) wait for a human: approve with POST /v1/approvals/<seq> or Approvals in the dashboard.")
+print(f"\nreceipt log: {v['records']} signed receipts, chain valid = {v['ok']}  ({shield.log.path})")
+fails = [r for r in shield.log.records() if r["kind"] == "execution_failed"]
+if fails:
+    print(f"WARNING: {len(fails)} allowed payment(s) failed to execute: {fails[0].get('error', '')[:160]}")
+if stats and stats["ESCALATE"]:
+    print(f"{stats['ESCALATE']} payment(s) wait for a human (POST /v1/approvals/<seq> or the dashboard).")

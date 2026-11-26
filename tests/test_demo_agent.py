@@ -37,3 +37,14 @@ def test_agent_loop_blocks_attack_and_survives_bad_calls(tmp_path):
     decisions = [r for r in shield.log.records() if r["kind"] == "decision"]
     assert [r["verdict"] for r in decisions] == ["ALLOW", "ESCALATE", "DENY"]
     assert verify_log(shield.log.path)["ok"]
+
+
+def test_hijacked_agent_is_contained(tmp_path):
+    from agentshield_qore.demo_agent import hijack_attacks
+    kp = qorsdk.generate_pqc_keypair()
+    shield = Shield(Policy(allowed_recipients=frozenset({VENDOR})), ReceiptLog(str(tmp_path / "r.jsonl"), kp),
+                    ChainSigner(kp, dry_run=True))
+    res = hijack_attacks(shield, VENDOR, ATTACKER, out=lambda *_: None)
+    assert res["drain"] == ["DENY"] and res["quiet"] == ["DENY"] and res["split"] == ["DENY"] * 4
+    assert res["burst"] == ["ALLOW"] * 5 + ["DENY"] * 3          # rate limit: 5 per minute
+    assert verify_log(shield.log.path)["ok"]

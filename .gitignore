@@ -6,3 +6,5 @@ data/
 policies.json
 *.key
 data_livecheck/
+data_*/
+data_demo/
