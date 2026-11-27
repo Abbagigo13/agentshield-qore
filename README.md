@@ -24,14 +24,15 @@ agent --intent--> [policy engine] --ALLOW--> [hybrid secp256k1 + ML-DSA-87 tx] -
 - **On-chain anchor:** commit the log head in a transaction memo.
 - **Chain-enforced limits (delegated mode):** the gateway signs with a linked delegate key and a relayer submits, so the chain itself refuses payments above the on-chain limit. Verified on the testnet; see [docs/VERIFICATION.md](docs/VERIFICATION.md).
 - **Human approval:** large payments wait for a person; pending approvals survive restarts.
+- **Live dashboard:** the website connects to your gateway: real receipts, approve/reject, quarantine release, gateway-side verification (see `docs/SETUP.md`).
 - **Per-agent policies**, an **HTTP API**, an **MCP server**, a **CLI**, and a **dashboard website**.
 
 ## Quickstart
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1          # Linux/macOS: source .venv/bin/activate
-pip install -r requirements.txt
-python -m pytest -q                    # 22 passed
+pip install -r requirements.txt -c requirements.lock   # pinned, reproducible
+python -m pytest -q                    # 23 passed
 python -m agentshield_qore.cli demo    # offline demo, no keys needed
 uvicorn agentshield_qore.gateway:app --port 8080
 ```

@@ -8,7 +8,8 @@ This project was built with AI assistance. This file records how, for the QoreCh
 ## What the AI did
 - Proposed the project idea after comparing likely submissions, and chose the problem (agents holding wallet keys).
 - Wrote the first versions of the Python package (`policy.py`, `receipts.py`, `chain.py`, `shield.py`, `onchain.py`, `config.py`, `gateway.py`, `mcp_server.py`, `cli.py`) by reading the installed `qorechain-sdk` and its docs.
-- Wrote the automated tests in `tests/`.
+- Wrote the automated tests in `tests/` (23 at the time of writing).
+- Designed and wrote the delegated mode (delegate key, relayer, chain-enforced limits) after the first live test showed the owner key is not bounded by on-chain rules, the repeated-denials quarantine rule (R09), the demo agent and its hijack mode, the live dashboard connection, and the pinned dependency files and CI workflow.
 - Wrote the website in `web/index.html` and the documents in `docs/`, `README.md` and `AGENTS.md`.
 - Found and fixed bugs it caused (for example an agent-key parsing bug and an MCP library version break).
 
@@ -16,10 +17,12 @@ This project was built with AI assistance. This file records how, for the QoreCh
 - Set the goals, scope and priorities, and rejected ideas other builders were likely to submit.
 - Chose the visual direction (neumorphism) and the page structure.
 - Installed and ran the project and its tests on a Windows machine and reported errors back.
+- Ran every live testnet step with a funded testnet wallet and pasted the real output back, which exposed three bugs and the owner-versus-delegate finding.
+- Ran the dashboard in a real browser and reported what looked wrong.
 - Registers the project, controls the repository, and will run and verify the live testnet steps.
 
 ## How the output was checked
-- 22 automated tests (offline). Run `python -m pytest -q`.
+- 23 automated tests (offline). Run `python -m pytest -q`.
 - An offline end-to-end demo: `python -m agentshield_qore.cli demo`.
 - The human ran the tests and demo locally.
 

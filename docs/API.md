@@ -21,12 +21,13 @@ Integers in base units. `1 QOR = 1,000,000 uqor`.
 | GET | `/v1/pending` | admin | List escalations awaiting a human |
 | POST | `/v1/approvals/{seq}` | admin | Approve and execute |
 | POST | `/v1/rejections/{seq}` | admin | Reject |
-| GET | `/v1/receipts?limit=50` | none | Latest receipts (limit 1 to 500) |
+| GET | `/v1/receipts?limit=50&slim=false` | none | Latest receipts (limit 1 to 500). `slim=true` drops the 9 KB signature from each record |
 | GET | `/v1/verify` | none | Verify hash chain and every signature |
 | POST | `/v1/anchor` | admin | Anchor the log head on-chain |
 | GET | `/v1/onchain` | none | Compare on-chain spending rules with gateway policy |
 | POST | `/v1/onchain/sync` | admin | Write gateway limits on-chain (direct mode; returns `409` in delegated mode) |
 | GET | `/v1/health` | none | Mode, network, owner and signer addresses |
+| GET | `/v1/agents` | admin | All known agents with recent denials and quarantine status |
 | GET | `/v1/agents/{agent_id}` | admin | Recent denials and whether the agent is quarantined |
 | POST | `/v1/agents/{agent_id}/release` | admin | Clear a quarantine after human review |
 
@@ -64,6 +65,11 @@ Unknown or already-handled sequence numbers return `404`.
 ### GET /v1/onchain
 Returns `enforced_on_chain`, `in_sync`, per-field `checks` (`match`, `chain_looser`, `chain_unbounded`, `chain_stricter`,
 `differs`), a `summary`, and a `coverage` map of which rules the chain enforces. Requires network access to the testnet.
+
+## Browser access (CORS)
+The dashboard calls this API from the browser. Allowed origins come from `AGENTSHIELD_CORS` (comma list; default
+`http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000`). Other origins are refused by the browser. CORS is not
+authentication: admin routes still need `X-Admin-Token`. `GET /v1/health` also returns the default `policy` limits.
 
 ## Rules reference
 | ID | Meaning |

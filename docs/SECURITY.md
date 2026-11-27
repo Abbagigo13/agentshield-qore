@@ -51,6 +51,15 @@ Add `.env`, `data/` and `*.key` to `.gitignore`.
 | Denial of service | No API rate limiting |
 | Multiple workers | Corrupt the chain. Run one |
 
+## Dashboard and browser access
+- CORS limits which web pages may call the gateway from a browser. It does not authenticate anyone.
+- The admin token and agent key are typed into the dashboard and kept in page memory only; they are never saved. Use HTTPS if the
+  gateway is not on localhost, or the token travels in clear text.
+- The read routes (`/v1/receipts`, `/v1/verify`, `/v1/health`) are public and receipts contain payment details and memos.
+  Keep the gateway on localhost or behind authentication before exposing it.
+- The dashboard escapes everything that comes from receipts, because agent-supplied text (for example a recipient string) is hostile
+  input. This is covered by the browser test in `tests/browser/`.
+
 ## Known limitations
 - No TLS, CORS policy, API rate limiting, key rotation, HSM/KMS support or encryption of the log at rest.
 - Constant-time comparison is not used for tokens (dictionary lookup, simple equality).

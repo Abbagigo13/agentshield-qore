@@ -42,6 +42,12 @@ donut (inline SVG), approval items with Approve and Reject, FAQ disclosure list,
 Designed separately from desktop: bottom tab bar, single-column grids, receipt rows collapse to three columns, wide
 tables scroll inside their own container, safe-area insets respected.
 
+## Live mode
+Overview has a connect card (gateway URL, admin token, agent key). Connected, the sidebar chip reads "Live" and the pages use real
+data: receipts, pending approvals with working Approve and Reject, an Agents page with Release for quarantined agents, and Verify
+that asks the gateway to check hashes and signatures. Policies become read-only and the tamper toggle is hidden (a browser cannot
+tamper with a live log). Disconnect reloads the demo.
+
 ## Honesty rules for the UI
 - Browser demo hashes are real SHA-256 over the gateway's canonical JSON.
 - ML-DSA-87 signatures are **not** computed in the browser; the page says so.

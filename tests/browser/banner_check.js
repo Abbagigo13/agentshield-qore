@@ -1,0 +1,10 @@
+const {JSDOM}=require('jsdom');const fs=require('fs');const {webcrypto}=require('crypto');const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+(async()=>{const dom=new JSDOM(fs.readFileSync(''+(process.env.SITE||'web/index.html')+'','utf8'),{runScripts:'dangerously',url:'http://localhost:5500/',pretendToBeVisual:true,beforeParse(w){w.fetch=(u,o)=>fetch(u,o);Object.defineProperty(w,'crypto',{value:webcrypto});w.TextEncoder=TextEncoder;w.scrollTo=()=>{}}});
+const w=dom.window,d=w.document,q=s=>d.querySelector(s);await sleep(800);w.location.hash='overview';await sleep(300);
+q('#g-url').value='http://localhost:'+(process.env.PORT||8080)+'';q('#g-adm').value='tok';q('#g-key').value='key-a';q('[data-act=conn]').click();await sleep(1500);
+w.location.hash='receipts';await sleep(400);q('[data-act=ver]').click();await sleep(4000);
+w.eval('draw()');await sleep(100);
+console.log(/Verified by the gateway/.test(q('#ban').textContent)&&q('#ban').style.color.includes('--ok')?'PASS banner keeps its green colour after a redraw':'FAIL banner colour/text after redraw ('+q('#ban').style.color+')');
+await fetch('http://localhost:'+(process.env.PORT||8080)+'/v1/intents',{method:'POST',headers:{'content-type':'application/json','X-Agent-Key':'key-a'},body:JSON.stringify({to:'qor1bad',amount:5})});
+await w.eval('sync()');w.eval('draw()');await sleep(100);
+console.log(q('#ban').style.display!=='block'?'PASS stale "Verified" banner clears when new receipts arrive':'FAIL stale banner still shown');process.exit(0)})();

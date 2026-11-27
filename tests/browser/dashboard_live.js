@@ -1,0 +1,40 @@
+// Optional end-to-end check of the live dashboard in a simulated browser (jsdom). See docs/TESTING.md.
+const {JSDOM}=require('jsdom');const fs=require('fs');const {webcrypto}=require('crypto');
+const html=fs.readFileSync(process.env.SITE||'web/index.html','utf8');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+(async()=>{
+const dom=new JSDOM(html,{runScripts:'dangerously',url:'http://localhost:5500/',pretendToBeVisual:true,
+  beforeParse(w){w.fetch=(u,o)=>fetch(u,o);Object.defineProperty(w,'crypto',{value:webcrypto});w.TextEncoder=TextEncoder;w.scrollTo=()=>{};w.alert=()=>{globalThis.XSS=true}}});
+const w=dom.window,d=w.document;const q=s=>d.querySelector(s);const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1};
+await sleep(800);
+w.location.hash='overview';await sleep(300);
+ok(!!q('#g-url'),'connect card shown on Overview');
+q('#g-url').value='http://localhost:'+(process.env.PORT||8080)+'';q('#g-adm').value='tok';q('#g-key').value='key-a';
+q('[data-act=conn]').click();await sleep(1500);
+ok(/LIVE/.test(q('main').textContent),'connected: LIVE badge');
+ok(/Live: direct/.test(q('#nav').textContent),'sidebar chip shows live mode');
+w.location.hash='receipts';await sleep(500);
+const rows=d.querySelectorAll('.row').length;ok(rows>=8,'receipts feed shows live receipts ('+rows+')');
+ok(!q('[data-act=tam]'),'tamper button hidden in live mode');
+ok(!/onerror/.test(q('#feed').innerHTML.replace(/&lt;[^]*?&gt;/g,'')),'hostile address text is escaped, not injected');
+q('[data-act=ver]').click();await sleep(2500);
+ok(/Verified by the gateway/.test(q('#ban').textContent),'verify: gateway confirms chain + signatures');
+w.location.hash='approvals';await sleep(500);
+const n0=d.querySelectorAll('[data-act=appr]').length;ok(n0>=1,'pending approvals shown ('+n0+')');
+w.location.hash='agents';await sleep(500);
+ok(/QUARANTINED/.test(q('main').textContent),'agents page shows quarantined agent');
+q('[data-act=release]').click();await sleep(1200);
+ok(/OK/.test(q('main').textContent)&&!/QUARANTINED/.test(q('main').textContent),'release clears the quarantine');
+w.location.hash='approvals';await sleep(400);
+q('[data-act=appr]').click();await sleep(1500);
+ok(d.querySelectorAll('[data-act=appr]').length==n0-1,'approve removes one pending item');
+w.location.hash='playground';await sleep(400);
+q('#to').value=JSON.parse(await (await fetch('http://localhost:'+(process.env.PORT||8080)+'/v1/health')).text()).relayer_or_signer;q('#amt').value='0.01';
+q('[data-act=send]').click();await sleep(1500);
+ok(/ALLOW/.test(q('#res').textContent),'playground sends to live gateway: ALLOW');
+q('#to').value='qor1bad';q('[data-act=send]').click();await sleep(1500);
+ok(/DENY/.test(q('#res').textContent),'playground: bad address DENY from live gateway');
+w.location.hash='overview';await sleep(400);
+ok(/Receipts/.test(q('main').textContent),'overview renders live counts');
+ok(!globalThis.XSS,'no script executed from hostile data');
+process.exit(process.exitCode||0)})();

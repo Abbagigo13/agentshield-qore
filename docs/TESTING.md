@@ -3,9 +3,13 @@
 ## Run
 ```bash
 pip install -r requirements.txt
-python -m pytest -q          # 22 tests, offline, about 10 seconds
+python -m pytest -q          # 23 tests, offline, about 10 seconds
 ```
 No network, wallet or funds are used. Transactions are built and signed in dry-run mode.
+
+## Reproducible install
+`pip install -r requirements-mcp.txt -c requirements.lock` then `python -m pytest -q`. A clean Linux (Python 3.12) environment built this way
+passed the suite, and `.github/workflows/tests.yml` runs it on Ubuntu and Windows with Python 3.12 and 3.13 on every push.
 
 ## Suite
 | File | Tests | Covers |
@@ -13,7 +17,15 @@ No network, wallet or funds are used. Transactions are built and signed in dry-r
 | `tests/test_core.py` | 6 | Allow, every deny rule, daily and rate limits, escalate then approve, log verification, tamper and deletion detection |
 | `tests/test_onchain.py` | 4 | Rule generation and validation, update message, drift report cases, dry-run sync receipt |
 | `tests/test_demo_agent.py` | 2 | Agent loop with a scripted model (ALLOW, ESCALATE, DENY, bad tool calls survive); hijack scenario ends in quarantine |
+| `tests/test_gateway.py` | 1 | Dashboard endpoints: health policy, slim receipts, agents list (admin only), CORS allow and refuse |
 | `tests/test_hardening.py` | 10 | Pending approvals after restart, per-agent policy, 20 concurrent submissions, `.env` and policy file loading, MCP tools, MCP tool listing, waiting for tx inclusion, delegate signing and link messages, delegated mode from config, R09 quarantine, release, restart and window |
+
+## Dashboard test (optional, needs Node)
+`tests/browser/dashboard_live.js` drives `web/index.html` in a simulated browser (jsdom) against a running, seeded gateway and
+checks: connect, live receipts, gateway-side verification, approvals, quarantine and release, the playground, and that hostile
+recipient text is escaped. Run: start a gateway on port 8080 with `AGENT_KEYS=agent-a:key-a`, `AGENTSHIELD_ADMIN_TOKEN=tok` and
+`AGENTSHIELD_DRY_RUN=1`; seed it once with `python scripts/seed_gateway.py --key key-a --yes` (it creates pending approvals and a quarantined agent, which the test expects);
+`npm install jsdom`; `node tests/browser/dashboard_live.js`. It is not part of `pytest`.
 
 ## Manual checks
 ```bash

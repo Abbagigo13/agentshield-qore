@@ -15,10 +15,10 @@
 | HTTP gateway | Built, smoke-tested |
 | MCP server (`pay`, `spending_limits`) | Built, tool listing tested |
 | Website (landing, 7 dashboard pages, docs sections) | Built; runs a browser simulation, not the real gateway |
-| Live dashboard against the gateway | Not started |
+| Live dashboard against the gateway | Built; checked in a simulated browser against a real gateway (not yet in a real browser) |
 | Demo agent with a real LLM | Not started |
 
-22 automated tests pass on Linux and on Windows (Python 3.13, `qorechain-sdk` 0.14.0).
+23 automated tests pass on Linux and on Windows (Python 3.13, `qorechain-sdk` 0.14.0).
 
 ## Build order used
 1. Policy engine and tests (pure logic first).
@@ -51,5 +51,5 @@
 1. Demo agent: an LLM agent with the `pay` tool facing a poisoned invoice, running in delegated mode.
 2. Live dashboard: point the website at the real gateway (`/v1/health`, `/v1/receipts`, `/v1/verify`, `/v1/onchain`).
 3. Exercise the on-chain daily cap, delegate expiry and revocation; add a revoke command.
-4. Pin tested dependency versions; fee estimation instead of a fixed gas price.
+4. Fee estimation instead of a fixed gas price. (Dependency versions are pinned: `requirements.txt` and `requirements.lock`.)
 5. MCP server against a real client.

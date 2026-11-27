@@ -8,18 +8,19 @@ Windows PowerShell:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1      # if blocked: Set-ExecutionPolicy -Scope Process Bypass
-pip install -r requirements.txt
+pip install -r requirements.txt -c requirements.lock
 ```
 Linux or macOS:
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt -c requirements.lock
 ```
-Optional MCP server: `pip install -r requirements-mcp.txt`.
+Optional MCP server: `pip install -r requirements-mcp.txt -c requirements.lock`.
+`requirements.lock` pins every package to the versions that passed the tests and the live testnet runs. Without it, a fresh install picks newer transitive versions. Tested on Python 3.12 (Linux) and 3.13 (Windows).
 
 ## 2. Verify offline
 ```bash
-python -m pytest -q                    # expect 22 passed
+python -m pytest -q                    # expect 23 passed
 python -m agentshield_qore.cli demo     # attacks blocked, tampered log detected
 ```
 No `.env` and no network are needed for this.
@@ -72,6 +73,20 @@ print(s.send(s.address, 1, "uqor", "agentshield test"))
 3. Later, `python scripts/link_delegate.py --update-rules` changes the on-chain limits to match your policy.
 4. Start the gateway: `GET /v1/health` shows `"mode": "delegated"`.
 Production: set `AGENTSHIELD_OWNER_ADDRESS`, `AGENTSHIELD_RELAYER_MNEMONIC` and `AGENTSHIELD_DELEGATE_SEED`, and keep the owner key off the gateway host.
+
+### Live dashboard
+```powershell
+# terminal 1: the gateway (dry-run is free and safe for a demo)
+$env:AGENTSHIELD_DRY_RUN="1"; python -m uvicorn agentshield_qore.gateway:app --port 8080
+# terminal 2: the dashboard
+python -m http.server 5500 --directory web
+# terminal 3: fill the gateway with activity (use the secret after the colon in AGENT_KEYS)
+python scripts/seed_gateway.py --key YOUR_AGENT_KEY
+```
+Open `http://localhost:5500`, press Enter, and on Overview enter `http://localhost:8080`, your `AGENTSHIELD_ADMIN_TOKEN` and the agent
+key. Receipts, Approvals (approve or reject for real), Agents (release a quarantine) and Verify (the gateway checks every hash
+link and ML-DSA-87 signature) then use live data. The page must be served from an allowed origin (see CORS in `docs/API.md`).
+The preview link of the website cannot reach a local gateway; use the local server above.
 
 ### Guided live check
 `python scripts/live_check.py --address` prints the wallet address to fund. After funding, `python scripts/live_check.py`

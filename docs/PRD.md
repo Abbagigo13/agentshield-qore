@@ -46,7 +46,7 @@ a tamper-evident, post-quantum signed receipt.
 | F12 | Delegated mode: chain refuses payments above the limit | Done; verified on testnet |
 | F9 | Per-agent policies from a JSON file | Done |
 | F10 | Website: landing, dashboard, attack playground, verify/tamper demo | Done (browser simulation) |
-| F11 | Live dashboard backed by the real gateway | Not started |
+| F11 | Live dashboard backed by the real gateway | Done; simulated-browser tested |
 
 ## 7. Non-functional requirements
 - **Integrity:** altering or removing any record except trailing ones must fail verification.

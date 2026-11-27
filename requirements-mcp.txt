@@ -1,2 +1,3 @@
 -r requirements.txt
-mcp>=1.2  # works with 1.x and 2.x
+# Tested with mcp 2.3.0. agentshield_qore/mcp_server.py also supports mcp 1.x.
+mcp==2.3.0

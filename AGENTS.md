@@ -10,7 +10,7 @@ Testnet only. Read `docs/ARCHITECTURE.md` first.
 ## Commands
 ```bash
 pip install -r requirements.txt          # add requirements-mcp.txt for the MCP server
-python -m pytest -q                      # must stay green (22 tests at time of writing)
+python -m pytest -q                      # must stay green (23 tests at time of writing)
 python -m agentshield_qore.cli demo      # offline end-to-end demo
 python -m agentshield_qore.cli verify data/receipts.jsonl
 uvicorn agentshield_qore.gateway:app --port 8080

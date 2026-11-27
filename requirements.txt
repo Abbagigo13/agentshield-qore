@@ -1,5 +1,7 @@
-qorechain-sdk>=0.3.0
-fastapi>=0.110
-uvicorn>=0.29
-httpx>=0.27
-pytest>=8
+# Direct dependencies, pinned to the versions the tests and live testnet runs used.
+# Full transitive pins are in requirements.lock:  pip install -r requirements.txt -c requirements.lock
+qorechain-sdk==0.14.0
+fastapi==0.163.1
+uvicorn==0.54.0
+httpx==0.28.1
+pytest==9.2.0
